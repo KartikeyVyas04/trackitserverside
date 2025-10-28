@@ -1,871 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TrackIT - Expense Tracker (Firebase)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackIT – Expense Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
   <style>
-/* ---------- Styles (kept full-featured & responsive) ---------- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-.header { background: white; padding: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-.header-content { display:flex; justify-content:space-between; align-items:center; padding: 0 20px; max-width:1200px; margin:0 auto; }
-.header-left { display:flex; align-items:center; gap:12px; }
-.menu-toggle { background:none; border:none; font-size:22px; cursor:pointer; color:#ff6b35; padding:8px; border-radius:8px; }
-.logo { font-size:20px; font-weight:700; color:#ff6b35; cursor:pointer; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #f9f9f9; color: #333; overflow-x: hidden; }
 
-.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: #fff; box-shadow: 4px 0 12px rgba(0,0,0,0.08); z-index: 200; display:flex; flex-direction:column; justify-content:space-between; }
-.sidebar-header { padding: 20px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
-.sidebar-title { font-size:22px; font-weight:700; color:#ff6b35; }
-.sidebar-nav { padding: 12px; display:flex; flex-direction:column; gap:6px; }
-.nav-item { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:8px; cursor:pointer; color:#555; font-weight:600; }
-.nav-item:hover { background:#fff3f0; color:#ff6b35; }
-.nav-item.active { background:#ff6b35; color:#fff; }
+    /* Layout */
+    .app-container { display: flex; height: 100vh; overflow: hidden; }
+    aside.sidebar {
+      background: #fff;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+      position: fixed; top: 0; left: 0;
+      overflow-y: auto; /* ✅ fix: allows scrolling on small screens */
+      z-index: 10;
+    }
 
-.sidebar-footer { padding:16px; border-top:1px solid #eee; text-align:center; display:none; }
-.sidebar-footer p { margin-bottom:8px; font-weight:600; color:#333; }
-#logout-sidebar-btn { background:#ff6b35; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+    .sidebar-menu { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .sidebar-menu button {
+      background: none; border: none; text-align: left; font-size: 15px;
+      padding: 10px; border-radius: 8px; cursor: pointer;
+    }
+    .sidebar-menu button:hover, .sidebar-menu button.active {
+      background: #ff6b35; color: #fff;
+    }
 
-.container { margin-left: 300px; padding: 88px 24px 120px 24px; max-width:1200px; margin-right:auto; }
-@media (max-width: 900px) { .container { margin-left: 0; padding: 88px 12px 120px 12px; } .sidebar { position: fixed; transform: translateX(-110%); transition: transform .25s ease; } .sidebar.open { transform: translateX(0); } }
+    /* ✅ Sidebar footer for username + logout */
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid #eee;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .sidebar-footer p {
+      font-weight: 600; margin-bottom: 8px; color: #555;
+      word-break: break-all;
+    }
+    #logout-sidebar-btn {
+      background: #ff6b35; color: white; border: none; border-radius: 6px;
+      padding: 8px 14px; cursor: pointer;
+      width: 100%;
+    }
 
-.summary-section { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:20px; }
-.summary-card { background:#fff; padding:18px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-.summary-label { font-size:13px; color:#888; margin-bottom:6px; text-transform:uppercase; }
-.summary-value { font-size:24px; font-weight:700; color:#333; }
-.summary-value.income { color:#10b981; }
-.summary-value.expense { color:#ef4444; }
-.summary-value.balance { color:#ff6b35; }
+    header { background: #fff; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-left: 240px; }
 
-.section { background:#fff; padding:18px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.06); margin-bottom:18px; }
-.section-title { font-size:18px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+    .logo { font-size: 22px; font-weight: 700; color: #ff6b35; }
 
-.transaction-list { display:flex; flex-direction:column; gap:10px; }
-.transaction-item { display:flex; justify-content:space-between; align-items:center; padding:12px; background:#fafafa; border-radius:10px; border-left:4px solid #ff6b35; }
-.transaction-item.income { border-left-color:#10b981; }
-.transaction-item.expense { border-left-color:#ef4444; }
+    main {
+      margin-left: 240px;
+      padding: 24px;
+      overflow-y: auto;
+      height: calc(100vh - 60px);
+      -webkit-overflow-scrolling: touch; /* ✅ smooth mobile scroll */
+    }
+    section { display: none; }
+    section.active { display: block; }
 
-.btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
-.btn-primary { background:#ff6b35; color:#fff; }
-.btn-secondary { background:#f0f0f0; color:#333; }
+    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .transaction { display: flex; justify-content: space-between; padding: 12px; background: #fff; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .income { border-left: 4px solid #10b981; }
+    .expense { border-left: 4px solid #ef4444; }
 
-.modal-overlay { display:none; position:fixed; inset:0; background: rgba(0,0,0,0.5); z-index:400; align-items:center; justify-content:center; }
-.modal-overlay.show { display:flex; }
-.modal { background:#fff; padding:22px; border-radius:12px; width:100%; max-width:520px; max-height:90vh; overflow:auto; box-shadow:0 12px 40px rgba(0,0,0,0.12); }
+    #auth-container {
+      display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5;
+    }
+    .auth-box {
+      background: white; padding: 30px; border-radius: 12px; width: 320px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;
+    }
+    .auth-box h2 { margin-bottom: 20px; color: #ff6b35; }
+    .auth-box input {
+      width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .auth-box button {
+      width: 100%; padding: 10px; border: none; border-radius: 6px;
+      background: #ff6b35; color: white; font-weight: 600; cursor: pointer;
+    }
+    .auth-box a { display: block; margin-top: 10px; font-size: 13px; color: #ff6b35; cursor: pointer; }
 
-.auth-overlay { position:fixed; inset:0; background:linear-gradient(120deg,#fff 0%, #fff 60%, #fff); display:flex; align-items:center; justify-content:center; z-index:500; }
-.auth-card { width:100%; max-width:920px; display:flex; border-radius:12px; box-shadow:0 12px 48px rgba(0,0,0,0.14); overflow:hidden; background:#fff; }
-.auth-left { flex:1; padding:36px; background:linear-gradient(180deg,#ff6b35,#ff9b73); color:#fff; }
-.auth-right { flex:1; padding:28px; }
-.auth-form input { width:100%; padding:10px 12px; margin-bottom:12px; border-radius:8px; border:1px solid #e5e5e5; }
-
-.small { font-size:13px; color:#666; }
-
-.hidden { display:none !important; }
+    @media(max-width: 768px) {
+      aside.sidebar {
+        width: 200px;
+      }
+      header, main {
+        margin-left: 200px;
+      }
+    }
   </style>
 </head>
+
 <body>
-
-  <!-- AUTH PAGE (shown while not signed in) -->
-  <div id="auth-overlay" class="auth-overlay" style="display:none;">
-    <div class="auth-card">
-      <div class="auth-left">
-        <h1>Welcome to TrackIT</h1>
-        <p style="margin-top:10px;line-height:1.4;">Sign in to keep your data secure and synced across devices. Create an account or sign in with Google.</p>
-        <ul style="margin-top:16px;line-height:1.6;">
-          <li>Sync transactions & budgets</li>
-          <li>Real-time analytics</li>
-          <li>Export / Import backups</li>
-        </ul>
-      </div>
-      <div class="auth-right">
-        <div style="max-width:420px;margin:0 auto;">
-          <div style="display:flex;gap:8px;margin-bottom:14px;">
-            <button id="btn-switch-signin" class="btn btn-secondary" style="flex:1;">Sign In</button>
-            <button id="btn-switch-signup" class="btn btn-primary" style="flex:1;">Sign Up</button>
-          </div>
-
-          <form id="signin-form">
-            <input id="signin-email" type="email" placeholder="Email" required>
-            <input id="signin-password" type="password" placeholder="Password" required>
-            <div style="display:flex;gap:8px;">
-              <button id="signin-btn" type="button" class="btn btn-primary" style="flex:1;">Sign In</button>
-              <button id="google-signin-btn" type="button" class="btn btn-secondary" style="flex:1;">Google</button>
-            </div>
-            <div style="margin-top:12px;"><button id="forgot-btn" type="button" class="small link-btn">Forgot password?</button></div>
-          </form>
-
-          <form id="signup-form" style="display:none;">
-            <input id="signup-name" type="text" placeholder="Full name" required>
-            <input id="signup-email" type="email" placeholder="Email" required>
-            <input id="signup-password" type="password" placeholder="Password" required>
-            <div style="display:flex;gap:8px;">
-              <button id="signup-btn" type="button" class="btn btn-primary" style="flex:1;">Create account</button>
-              <button id="google-signup-btn" type="button" class="btn btn-secondary" style="flex:1;">Google</button>
-            </div>
-          </form>
-
-          <div id="auth-message" class="small" style="margin-top:12px;color:#ef4444;"></div>
-        </div>
-      </div>
+  <!-- Auth Page -->
+  <div id="auth-container">
+    <div class="auth-box">
+      <h2 id="auth-title">Sign In</h2>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button id="auth-btn">Login</button>
+      <a id="toggle-auth">Don't have an account? Sign Up</a>
+      <a id="forgot-password">Forgot Password?</a>
     </div>
   </div>
 
-  <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar">
-    <div>
-      <div class="sidebar-header">
-        <div class="sidebar-title">TrackIT</div>
-      </div>
-      <nav class="sidebar-nav" id="sidebar-nav">
-        <div class="nav-item active" data-page="home">🏠 Home</div>
-        <div class="nav-item" data-page="history">📋 History</div>
-        <div class="nav-item" data-page="analytics">📊 Analytics</div>
-        <div class="nav-item" data-page="recurring">🔄 Recurring</div>
-        <div class="nav-item" data-page="budget">💰 Budget</div>
-        <div class="nav-item" data-page="settings">⚙️ Settings</div>
-      </nav>
-    </div>
-
-    <div class="sidebar-footer" id="sidebar-footer">
-      <p id="sidebar-username">Signed in</p>
-      <button id="logout-sidebar-btn">Logout</button>
-    </div>
-  </aside>
-
-  <!-- Header -->
-  <header class="header">
-    <div class="header-content">
-      <div class="header-left">
-        <button class="menu-toggle" id="menu-toggle">☰</button>
-        <div class="logo" onclick="switchPage('home')">TrackIT</div>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="notification-bell" id="notification-bell" style="cursor:pointer;">🔔<span id="notification-dot" style="display:none;width:10px;height:10px;background:#ef4444;border-radius:50%;display:inline-block;margin-left:8px;"></span></div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main content container -->
-  <main class="container" id="app-container">
-    <!-- Home -->
-    <div id="page-home" class="page-section active">
-      <div class="summary-section">
-        <div class="summary-card" onclick="showIncome()">
-          <div class="summary-label">Total Income</div>
-          <div class="summary-value income" id="total-income">₹0</div>
-        </div>
-        <div class="summary-card" onclick="showExpense()">
-          <div class="summary-label">Total Expense</div>
-          <div class="summary-value expense" id="total-expense">₹0</div>
-        </div>
-        <div class="summary-card" onclick="openBudgetPage()">
-          <div class="summary-label">Current Balance</div>
-          <div class="summary-value balance" id="balance">₹0</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Budget Usage by Category</div>
-        <div id="budget-home" class="budget-home-section"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Recent Transactions</div>
-        <div id="recent-transactions" class="transaction-list"></div>
-      </div>
-    </div>
-
-    <!-- History -->
-    <div id="page-history" class="page-section" style="display:none;">
-      <div class="section">
-        <div class="section-title">All Transactions</div>
-        <input id="search-box" class="small" placeholder="Search transactions..." style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-bottom:12px;">
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="btn btn-secondary filter-btn active" data-filter="all">All</button>
-          <button class="btn btn-secondary filter-btn" data-filter="income">Income</button>
-          <button class="btn btn-secondary filter-btn" data-filter="expense">Expense</button>
-        </div>
-        <div class="transaction-list" id="all-transactions"></div>
-      </div>
-    </div>
-
-    <!-- Analytics -->
-    <div id="page-analytics" class="page-section" style="display:none;">
-      <div class="section">
-        <div class="section-title">Spending Distribution</div>
-        <div style="height:300px;"><canvas id="pie-chart"></canvas></div>
-      </div>
-      <div class="section">
-        <div class="section-title">Monthly Trend</div>
-        <div style="height:300px;"><canvas id="line-chart"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Recurring -->
-    <div id="page-recurring" class="page-section" style="display:none;">
-      <div class="section">
-        <div class="section-title">Recurring Payments</div>
-        <button class="btn btn-primary" onclick="openRecurringModal()">+ Add Recurring</button>
-        <div id="recurring-list" style="margin-top:12px;"></div>
-      </div>
-    </div>
-
-    <!-- Budget -->
-    <div id="page-budget" class="page-section" style="display:none;">
-      <div class="section">
-        <div class="section-title">Monthly Budget Tracker</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input id="budget-amount" type="number" placeholder="Set monthly budget" style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee;">
-          <button class="btn btn-primary" onclick="setBudget()">Set</button>
-        </div>
-        <div id="category-budget-list"></div>
-      </div>
-    </div>
-
-    <!-- Settings -->
-    <div id="page-settings" class="page-section" style="display:none;">
-      <div class="section">
-        <div class="section-title">Data & Settings</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
-          <button class="btn btn-secondary" onclick="exportJSON()">Export JSON</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Import</button>
-          <input id="import-file" type="file" accept=".json,.csv" onchange="handleImport(event)" style="display:none;">
-        </div>
-
-        <div style="margin-top:16px;">
-          <label>Currency</label>
-          <select id="currency-select" onchange="changeCurrency()" style="padding:8px;border-radius:8px;border:1px solid #eee;margin-top:8px;">
-            <option value="₹">₹ (INR)</option>
-            <option value="$">$ (USD)</option>
-            <option value="€">€ (EUR)</option>
-            <option value="£">£ (GBP)</option>
-          </select>
-        </div>
-
-        <div style="margin-top:18px;">
-          <button class="btn btn-secondary" style="background:#ef4444;color:#fff;" onclick="resetData()">Delete All Data</button>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Add transaction button -->
-  <button class="btn btn-primary" style="position:fixed;right:20px;bottom:20px;border-radius:50%;width:56px;height:56px;font-size:24px;" onclick="openModal()">+</button>
-
-  <!-- Transaction Modal -->
-  <div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this) closeModal()">
-    <div class="modal">
-      <h3 id="modal-title">Add Transaction</h3>
-      <form id="transaction-form" onsubmit="handleSubmit(event)">
-        <div style="margin-bottom:10px;">
-          <label>Type</label>
-          <select id="type" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;">
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </div>
-        <div style="margin-bottom:10px;">
-          <label>Title</label>
-          <input id="title" type="text" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;">
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <div style="flex:1;">
-            <label>Amount</label>
-            <input id="amount" type="number" step="0.01" min="0" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;">
-          </div>
-          <div style="flex:1;">
-            <label>Category</label>
-            <select id="category" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;"></select>
-          </div>
-        </div>
-        <div style="margin-bottom:10px;">
-          <label>Date</label>
-          <input id="date" type="date" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;">
-        </div>
-        <div style="margin-bottom:10px;">
-          <label>Notes</label>
-          <textarea id="notes" style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;margin-top:6px;" rows="3"></textarea>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Recurring modal -->
-  <div id="recurring-modal" class="modal-overlay" onclick="if(event.target===this) closeRecurringModal()">
-    <div class="modal">
-      <h3>Add Recurring Payment</h3>
-      <form id="recurring-form" onsubmit="handleRecurringSubmit(event)">
-        <div style="margin-bottom:10px;"><label>Title</label><input id="recurring-title" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee;"></div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <input id="recurring-amount" type="number" required placeholder="Amount" style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee;">
-          <select id="recurring-category" required style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee;"></select>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <select id="recurring-frequency" required style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee;">
-            <option value="monthly">Monthly</option>
-            <option value="weekly">Weekly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-          <input id="recurring-duedate" type="number" min="1" max="31" placeholder="Day" required style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee;">
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="btn btn-secondary" onclick="closeRecurringModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <input type="file" id="hidden-import" style="display:none" onchange="handleImport(event)">
-
-  <!-- Firebase + App Logic (complete) -->
-  <script type="module">
-/* ---------- Firebase imports ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {
-  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, writeBatch, query, orderBy
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import {
-  getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, signOut, updateProfile
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-
-/* ---------- FIREBASE CONFIG (your config) ---------- */
-const firebaseConfig = {
-  apiKey: "AIzaSyAhGtlmGJhDVlA019Mp9VaWFeqCZLcmvRw",
-  authDomain: "trackit-9b1b3.firebaseapp.com",
-  projectId: "trackit-9b1b3",
-  storageBucket: "trackit-9b1b3.firebasestorage.app",
-  messagingSenderId: "1069567955371",
-  appId: "1:1069567955371:web:ac13b2ec4d02b0a2c102ee",
-  measurementId: "G-9CHN828L1R"
-};
-
-/* ---------- Initialize Firebase ---------- */
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-/* ---------- App state ---------- */
-let uid = null;
-let transactions = [];
-let recurringPayments = [];
-let categories = ["Food","Travel","Rent","Shopping","Salary","Entertainment","Bills","Health","Other"];
-let monthlyBudget = 0;
-let categoryBudgets = {};
-let savingsGoal = 0;
-let currency = "₹";
-let notifications = [];
-let currentFilter = 'all';
-let editingTxnId = null;
-let pieChart = null, lineChart = null;
-
-/* Unsubscribe functions for realtime listeners */
-let unsubTx = null, unsubRec = null, unsubSettings = null;
-
-/* ---------- DOM refs ---------- */
-const authOverlay = document.getElementById('auth-overlay');
-const signinForm = document.getElementById('signin-form');
-const signupForm = document.getElementById('signup-form');
-const btnSwitchSignin = document.getElementById('btn-switch-signin');
-const btnSwitchSignup = document.getElementById('btn-switch-signup');
-const signinBtn = document.getElementById('signin-btn');
-const signupBtn = document.getElementById('signup-btn');
-const googleSigninBtn = document.getElementById('google-signin-btn');
-const googleSignupBtn = document.getElementById('google-signup-btn');
-const forgotBtn = document.getElementById('forgot-btn');
-const authMsg = document.getElementById('auth-message');
-
-const sidebar = document.getElementById('sidebar');
-const menuToggle = document.getElementById('menu-toggle');
-const sidebarFooter = document.getElementById('sidebar-footer');
-const sidebarUsername = document.getElementById('sidebar-username');
-const logoutSidebarBtn = document.getElementById('logout-sidebar-btn');
-
-const recentContainer = document.getElementById('recent-transactions');
-const allContainer = document.getElementById('all-transactions');
-const totalIncomeEl = document.getElementById('total-income');
-const totalExpenseEl = document.getElementById('total-expense');
-const balanceEl = document.getElementById('balance');
-const budgetHome = document.getElementById('budget-home');
-const categoryBudgetList = document.getElementById('category-budget-list');
-
-/* transaction form */
-const modalOverlay = document.getElementById('modal-overlay');
-const transactionForm = document.getElementById('transaction-form');
-
-/* recurring form */
-const recurringModal = document.getElementById('recurring-modal');
-const recurringForm = document.getElementById('recurring-form');
-
-/* charts */
-const pieCtx = document.getElementById('pie-chart').getContext('2d');
-const lineCtx = document.getElementById('line-chart').getContext('2d');
-
-/* navigation */
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-    item.classList.add('active');
-    const page = item.dataset.page;
-    document.querySelectorAll('.page-section').forEach(s => s.style.display = 'none');
-    document.getElementById('page-' + page).style.display = 'block';
-    // close sidebar on mobile
-    if(window.innerWidth < 900) sidebar.classList.remove('open');
-    if(page === 'analytics') setTimeout(()=>updateAnalytics(), 200);
-  });
-});
-
-/* sidebar toggle */
-menuToggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
-
-/* ---------- Auth UI logic ---------- */
-btnSwitchSignin.addEventListener('click', ()=>{ signinForm.style.display='block'; signupForm.style.display='none'; authMsg.textContent=''; });
-btnSwitchSignup.addEventListener('click', ()=>{ signinForm.style.display='none'; signupForm.style.display='block'; authMsg.textContent=''; });
-
-signinBtn.addEventListener('click', async () => {
-  const email = document.getElementById('signin-email').value.trim();
-  const pass = document.getElementById('signin-password').value;
-  if(!email || !pass) return authMsg.textContent = 'Enter email and password';
-  authMsg.textContent = 'Signing in...';
-  try { await signInWithEmailAndPassword(auth, email, pass); authMsg.textContent=''; }
-  catch (e) { authMsg.textContent = e.message; }
-});
-
-signupBtn.addEventListener('click', async () => {
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const pass = document.getElementById('signup-password').value;
-  if(!name || !email || !pass) return authMsg.textContent = 'Please fill all fields';
-  authMsg.textContent = 'Creating account...';
-  try {
-    const res = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(res.user, { displayName: name });
-    // create default settings doc
-    await setDoc(doc(db, 'users', res.user.uid, 'settings', 'prefs'), {
-      categories, monthlyBudget:0, categoryBudgets:{}, savingsGoal:0, currency
-    }, { merge: true });
-    authMsg.textContent = '';
-  } catch (e) { authMsg.textContent = e.message; }
-});
-
-googleSigninBtn.addEventListener('click', async ()=> {
-  try { await signInWithPopup(auth, provider); } catch(e){ authMsg.textContent = e.message; }
-});
-googleSignupBtn.addEventListener('click', async ()=> {
-  try { await signInWithPopup(auth, provider); } catch(e){ authMsg.textContent = e.message; }
-});
-
-forgotBtn.addEventListener('click', async () => {
-  const email = document.getElementById('signin-email').value.trim();
-  if(!email) return authMsg.textContent = 'Enter your email';
-  try { await sendPasswordResetEmail(auth, email); authMsg.style.color='green'; authMsg.textContent='Reset email sent'; } catch(e){ authMsg.style.color='red'; authMsg.textContent=e.message; }
-});
-
-/* Sign-out */
-logoutSidebarBtn.addEventListener('click', async ()=> { await signOut(auth); });
-
-/* ---------- Auth state change ---------- */
-onAuthStateChanged(auth, async user => {
-  if(user) {
-    uid = user.uid;
-    authOverlay.style.display = 'none';
-    sidebarFooter.style.display = 'block';
-    sidebarUsername.textContent = user.displayName || user.email;
-    // start realtime listeners
-    startRealtime();
-  } else {
-    uid = null;
-    authOverlay.style.display = 'flex';
-    sidebarFooter.style.display = 'none';
-    stopRealtime();
-    transactions = []; recurringPayments = []; categoryBudgets = {}; monthlyBudget = 0; savingsGoal = 0; currency='₹'; categories = ["Food","Travel","Rent","Shopping","Salary","Entertainment","Bills","Health","Other"];
-    updateCategoryDropdown(); renderCategoryBudgets(); renderRecurringList(); updateUI();
-  }
-});
-
-/* ---------- Realtime listeners ---------- */
-function startRealtime() {
-  if(!uid) return;
-  // transactions
-  const txCol = collection(db, "users", uid, "transactions");
-  const txQuery = query(txCol, orderBy("date","desc"));
-  unsubTx = onSnapshot(txQuery, snap => {
-    transactions = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    updateUI();
-  });
-  // recurring
-  const recCol = collection(db, "users", uid, "recurring");
-  unsubRec = onSnapshot(recCol, snap => {
-    recurringPayments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderRecurringList(); generateNotifications();
-  });
-  // settings
-  const settingsDoc = doc(db, "users", uid, "settings", "prefs");
-  unsubSettings = onSnapshot(settingsDoc, snap => {
-    const s = snap.data();
-    if(s){
-      categories = s.categories || categories;
-      monthlyBudget = s.monthlyBudget || 0;
-      categoryBudgets = s.categoryBudgets || {};
-      savingsGoal = s.savingsGoal || 0;
-      currency = s.currency || currency;
-    }
-    updateCategoryDropdown(); renderCategoryBudgets(); updateUI(); generateNotifications();
-  });
-}
-
-function stopRealtime() {
-  if(unsubTx) { unsubTx(); unsubTx = null; }
-  if(unsubRec) { unsubRec(); unsubRec = null; }
-  if(unsubSettings) { unsubSettings(); unsubSettings = null; }
-}
-
-/* ---------- Firestore helpers ---------- */
-async function writeSettingsToFirestore(){
-  if(!uid) throw new Error('Not authenticated');
-  const settingsRef = doc(db, "users", uid, "settings", "prefs");
-  await setDoc(settingsRef, { categories, monthlyBudget, categoryBudgets, savingsGoal, currency }, { merge:true });
-}
-
-async function addTransactionToFirestore(txn){
-  if(!uid) throw new Error('Not authenticated');
-  await addDoc(collection(db, "users", uid, "transactions"), txn);
-}
-
-async function updateTransactionInFirestore(txnId, txnObj){
-  if(!uid) throw new Error('Not authenticated');
-  await updateDoc(doc(db, "users", uid, "transactions", txnId), txnObj);
-}
-
-async function deleteTransactionFromFirestore(txnId){
-  if(!uid) throw new Error('Not authenticated');
-  await deleteDoc(doc(db, "users", uid, "transactions", txnId));
-}
-
-async function addRecurringToFirestore(r){
-  if(!uid) throw new Error('Not authenticated');
-  await addDoc(collection(db, "users", uid, "recurring"), r);
-}
-
-async function deleteRecurringFromFirestore(id){
-  if(!uid) throw new Error('Not authenticated');
-  await deleteDoc(doc(db, "users", uid, "recurring", id));
-}
-
-/* ---------- UI Update ---------- */
-function updateUI(){
-  updateSummary(); updateRecentTransactions(); updateAllTransactions(); updateBudgetHome(); generateNotifications();
-}
-
-/* summary */
-function updateSummary(){
-  let income = 0, expense = 0;
-  transactions.forEach(t => { if(t.type==='income') income += Number(t.amount||0); else expense += Number(t.amount||0); });
-  totalIncomeEl.textContent = currency + income.toLocaleString('en-IN',{maximumFractionDigits:2});
-  totalExpenseEl.textContent = currency + expense.toLocaleString('en-IN',{maximumFractionDigits:2});
-  balanceEl.textContent = currency + (income - expense).toLocaleString('en-IN',{maximumFractionDigits:2});
-}
-
-/* recent */
-function renderTransactionHTML(txn){
-  const amount = Number(txn.amount||0).toLocaleString('en-IN',{maximumFractionDigits:2});
-  const sign = txn.type === 'income' ? '+' : '-';
-  const date = txn.date ? new Date(txn.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '';
-  return `
-    <div class="transaction-item ${txn.type}">
+  <!-- App Container -->
+  <div class="app-container" style="display:none;">
+    <aside class="sidebar">
       <div>
-        <div style="font-weight:700;">${txn.title}</div>
-        <div class="small">${txn.category} • ${date}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-weight:700;">${sign}${currency}${amount}</div>
-        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px;">
-          <button class="btn btn-secondary" onclick="editTransaction('${txn.id}')">Edit</button>
-          <button class="btn btn-secondary" onclick="deleteTransaction('${txn.id}')">Delete</button>
+        <div class="sidebar-menu">
+          <button data-page="home" class="active">Home</button>
+          <button data-page="history">History</button>
+          <button data-page="analytics">Analytics</button>
+          <button data-page="budget">Budget</button>
+          <button data-page="settings">Settings</button>
         </div>
       </div>
+
+      <!-- ✅ moved username + logout cleanly here -->
+      <div class="sidebar-footer" id="sidebar-footer" style="display:none;">
+        <p id="username-display"></p>
+        <button id="logout-sidebar-btn">Logout</button>
+      </div>
+    </aside>
+
+    <div class="main-content" style="flex:1;">
+      <header><div class="logo">TrackIT</div></header>
+      <main>
+        <section id="home" class="active">
+          <div class="card">
+            <h3>Summary</h3>
+            <p id="summary-text">Loading...</p>
+          </div>
+          <div class="card">
+            <h3>Recent Transactions</h3>
+            <div id="transactions-list"></div>
+          </div>
+        </section>
+
+        <section id="history">
+          <div class="card"><h3>All Transactions</h3><div id="history-list"></div></div>
+        </section>
+
+        <section id="analytics">
+          <div class="card"><h3>Analytics</h3><canvas id="chart"></canvas></div>
+        </section>
+
+        <section id="budget">
+          <div class="card"><h3>Budget</h3><p>Coming soon...</p></div>
+        </section>
+
+        <section id="settings">
+          <div class="card"><h3>Settings</h3><p>Coming soon...</p></div>
+        </section>
+      </main>
     </div>
-  `;
-}
+  </div>
 
-function updateRecentTransactions(){
-  recentContainer.innerHTML = transactions.slice(0,5).map(t => renderTransactionHTML(t)).join('') || '<div class="small">No transactions</div>';
-}
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-function updateAllTransactions(){
-  const q = document.getElementById('search-box').value.toLowerCase();
-  let filtered = [...transactions];
-  if(currentFilter !== 'all') filtered = filtered.filter(t => t.type === currentFilter);
-  if(q) filtered = filtered.filter(t => (t.title||'').toLowerCase().includes(q) || (t.category||'').toLowerCase().includes(q));
-  allContainer.innerHTML = filtered.map(t => renderTransactionHTML(t)).join('') || '<div class="small">No transactions found</div>';
-}
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhGtlmGJhDVlA019Mp9VaWFeqCZLcmvRw",
+      authDomain: "trackit-9b1b3.firebaseapp.com",
+      projectId: "trackit-9b1b3",
+      storageBucket: "trackit-9b1b3.firebasestorage.app",
+      messagingSenderId: "1069567955371",
+      appId: "1:1069567955371:web:ac13b2ec4d02b0a2c102ee",
+      measurementId: "G-9CHN828L1R"
+    };
 
-/* budget home */
-function updateBudgetHome(){
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const totals = {};
-  transactions.filter(t=>t.type==='expense' && new Date(t.date) >= monthStart).forEach(t => totals[t.category] = (totals[t.category]||0) + Number(t.amount||0));
-  const html = Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat,spent])=>{
-    const bud = categoryBudgets[cat] || 0;
-    const pct = bud>0 ? (spent/bud*100) : 0;
-    return `<div class="budget-home-item ${pct>80?'warning':''}"><div><div class="budget-home-label">${cat}</div><div class="budget-home-bar" style="width:200px;background:#eee;border-radius:6px;margin-top:6px;"><div style="height:6px;background:${pct>80?'#ef4444':'#ff6b35'};width:${Math.min(pct,100)}%;border-radius:6px;"></div></div></div><div class="budget-home-percent">${Math.round(pct)}%</div></div>`;
-  }).join('');
-  budgetHome.innerHTML = html || '<div class="small">No budget usage yet</div>';
-}
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-/* ---------- Forms / CRUD ---------- */
-async function handleSubmit(e){
-  e.preventDefault();
-  if(!uid) return alert('Please log in');
-  const txn = {
-    type: document.getElementById('type').value,
-    title: document.getElementById('title').value.trim(),
-    amount: parseFloat(document.getElementById('amount').value),
-    category: document.getElementById('category').value,
-    date: document.getElementById('date').value,
-    notes: document.getElementById('notes').value.trim()
-  };
-  try {
-    if(editingTxnId){ await updateTransactionInFirestore(editingTxnId, txn); editingTxnId = null; }
-    else await addTransactionToFirestore(txn);
-    closeModal();
-  } catch (err){ alert('Save failed: '+err.message); }
-}
+    const authContainer = document.getElementById('auth-container');
+    const appContainer = document.querySelector('.app-container');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const authBtn = document.getElementById('auth-btn');
+    const toggleAuth = document.getElementById('toggle-auth');
+    const forgotPassword = document.getElementById('forgot-password');
+    const authTitle = document.getElementById('auth-title');
+    const usernameDisplay = document.getElementById('username-display');
+    const logoutSidebarBtn = document.getElementById('logout-sidebar-btn');
+    let isSignup = false;
 
-function editTransaction(id){
-  const t = transactions.find(x=>x.id===id);
-  if(!t) return;
-  editingTxnId = id;
-  document.getElementById('modal-title').textContent = 'Edit Transaction';
-  document.getElementById('type').value = t.type;
-  document.getElementById('title').value = t.title;
-  document.getElementById('amount').value = t.amount;
-  document.getElementById('category').value = t.category;
-  document.getElementById('date').value = t.date;
-  document.getElementById('notes').value = t.notes || '';
-  openModal();
-}
+    toggleAuth.addEventListener('click', () => {
+      isSignup = !isSignup;
+      authTitle.textContent = isSignup ? 'Sign Up' : 'Sign In';
+      authBtn.textContent = isSignup ? 'Register' : 'Login';
+      toggleAuth.textContent = isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up";
+    });
 
-async function deleteTransaction(id){
-  if(!confirm('Delete this transaction?')) return;
-  try { await deleteTransactionFromFirestore(id); } catch(e){ alert(e.message); }
-}
+    authBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if(!email || !password) return alert('Enter email & password');
+      try {
+        if (isSignup) await createUserWithEmailAndPassword(auth, email, password);
+        else await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) { alert(err.message); }
+    });
 
-/* recurring */
-async function handleRecurringSubmit(e){
-  e.preventDefault();
-  if(!uid) return alert('Please log in');
-  const r = {
-    title: document.getElementById('recurring-title').value,
-    amount: parseFloat(document.getElementById('recurring-amount').value),
-    category: document.getElementById('recurring-category').value,
-    frequency: document.getElementById('recurring-frequency').value,
-    dueDate: parseInt(document.getElementById('recurring-duedate').value),
-    notify: true
-  };
-  try { await addRecurringToFirestore(r); closeRecurringModal(); } catch(e){ alert(e.message); }
-}
+    forgotPassword.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email) return alert("Enter your email to reset password");
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Password reset email sent!");
+      } catch (err) { alert(err.message); }
+    });
 
-function renderRecurringList(){
-  const el = document.getElementById('recurring-list');
-  el.innerHTML = recurringPayments.map(r => `<div class="recurring-item"><div><strong>${r.title}</strong><div class="small">${r.frequency} • due ${r.dueDate}</div></div><div style="text-align:right;"><div style="font-weight:700;">${currency}${Number(r.amount||0).toLocaleString('en-IN')}</div><div style="margin-top:6px;"><button class="btn btn-secondary" onclick="deleteRecurring('${r.id}')">Delete</button></div></div></div>`).join('') || '<div class="small">No recurring payments</div>';
-}
+    const sidebarFooter = document.getElementById("sidebar-footer");
 
-async function deleteRecurring(id){
-  if(!confirm('Delete recurring payment?')) return;
-  try { await deleteRecurringFromFirestore(id); } catch(e){ alert(e.message); }
-}
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        authContainer.style.display = 'none';
+        appContainer.style.display = 'flex';
+        sidebarFooter.style.display = 'block';
+        usernameDisplay.textContent = user.email;
+        subscribeTransactions(user.uid);
+      } else {
+        authContainer.style.display = 'flex';
+        appContainer.style.display = 'none';
+        sidebarFooter.style.display = 'none';
+      }
+    });
 
-/* ---------- Charts & analytics ---------- */
-function updateAnalytics(){
-  // pie: expenses by category
-  const catTotals = {};
-  transactions.forEach(t => { if(t.type==='expense') catTotals[t.category] = (catTotals[t.category]||0) + Number(t.amount||0); });
-  const labels = Object.keys(catTotals);
-  const data = labels.map(l => catTotals[l]);
-  if(pieChart) pieChart.destroy();
-  pieChart = new Chart(pieCtx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:['#ff6b35','#f7931e','#4caf50','#2196f3','#9c27b0','#00bcd4'] }] }, options:{responsive:true,plugins:{legend:{position:'bottom'}}} });
+    logoutSidebarBtn.addEventListener("click", () => signOut(auth));
 
-  // line: last 12 months
-  const months = [];
-  const values = [];
-  for(let i=11;i>=0;i--){
-    const d = new Date(); d.setMonth(d.getMonth()-i);
-    const key = d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
-    months.push(key);
-    const start = new Date(d.getFullYear(), d.getMonth(), 1), end = new Date(d.getFullYear(), d.getMonth()+1, 0);
-    const val = transactions.filter(t => t.type==='expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s,a)=>s+Number(a.amount||0),0);
-    values.push(val);
-  }
-  if(lineChart) lineChart.destroy();
-  lineChart = new Chart(lineCtx, { type:'line', data:{ labels:months, datasets:[{ label:'Monthly Expense', data:values, borderColor:'#ff6b35', backgroundColor:'rgba(255,107,53,0.08)', fill:true }] }, options:{responsive:true} });
-}
+    const list = document.getElementById('transactions-list');
+    const historyList = document.getElementById('history-list');
+    const summaryText = document.getElementById('summary-text');
+    const chartEl = document.getElementById('chart');
+    let chart;
 
-/* ---------- Filters & UI helpers ---------- */
-document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', (e)=>{
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  currentFilter = btn.dataset.filter;
-  updateAllTransactions();
-}));
+    function subscribeTransactions(uid) {
+      const txRef = collection(db, "users", uid, "transactions");
+      onSnapshot(txRef, snapshot => {
+        const txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderTransactions(txns);
+      });
+    }
 
-document.getElementById('search-box').addEventListener('input', updateAllTransactions);
+    function renderTransactions(txns) {
+      list.innerHTML = ""; historyList.innerHTML = "";
+      let income = 0, expense = 0;
+      txns.forEach(t => {
+        const div = document.createElement('div');
+        div.className = `transaction ${t.type}`;
+        div.innerHTML = `<span>${t.title}</span><span>${t.type === 'income' ? '+' : '-'}₹${t.amount}</span>`;
+        list.appendChild(div);
+        historyList.appendChild(div.cloneNode(true));
+        if(t.type==='income') income += Number(t.amount);
+        else expense += Number(t.amount);
+      });
+      summaryText.textContent = `Income: ₹${income} | Expense: ₹${expense} | Balance: ₹${income - expense}`;
+      drawChart(income, expense);
+    }
 
-/* ---------- Modal controls ---------- */
-function openModal(){ if(!uid) return alert('Login first'); document.getElementById('modal-title').textContent='Add Transaction'; transactionForm.reset(); editingTxnId=null; modalOverlay.classList.add('show'); document.getElementById('date').valueAsDate = new Date(); }
-function closeModal(){ modalOverlay.classList.remove('show'); }
+    function drawChart(income, expense){
+      if(chart) chart.destroy();
+      chart = new Chart(chartEl, {
+        type:'doughnut',
+        data:{
+          labels:['Income','Expense'],
+          datasets:[{data:[income,expense],backgroundColor:['#10b981','#ef4444']}]
+        },
+        options:{plugins:{legend:{position:'bottom'}}}
+      });
+    }
 
-function openRecurringModal(){ if(!uid) return alert('Login first'); recurringModal.classList.add('show'); }
-function closeRecurringModal(){ recurringModal.classList.remove('show'); recurringForm.reset(); }
-
-/* ---------- Category UI ---------- */
-function updateCategoryDropdown(){
-  document.querySelectorAll('#category, #recurring-category').forEach(sel => {
-    if(!sel) return;
-    sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-  });
-}
-
-function renderCategoryBudgets(){
-  categoryBudgetList.innerHTML = categories.map(c => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><div style="width:120px">${c}</div><input id="cat-budget-${escapeId(c)}" type="number" placeholder="0" value="${categoryBudgets[c]||''}" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eee;"></div>`).join('');
-}
-
-function escapeId(s){ return s.replace(/[^a-z0-9]/gi,'_'); }
-
-async function saveCategoryBudgets(){
-  categories.forEach(c => {
-    const el = document.getElementById(`cat-budget-${escapeId(c)}`);
-    categoryBudgets[c] = el ? Number(el.value) || 0 : (categoryBudgets[c]||0);
-  });
-  await writeSettingsToFirestore();
-  updateBudgetHome();
-  alert('Saved');
-}
-
-/* ---------- Budget & goal ---------- */
-async function setBudget(){
-  const v = Number(document.getElementById('budget-amount').value) || 0;
-  monthlyBudget = v;
-  await writeSettingsToFirestore();
-  alert('Budget saved');
-}
-
-async function setGoal(){ const v = 0; }
-
-/* ---------- Notifications ---------- */
-function generateNotifications(){
-  notifications = [];
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthExpenses = transactions.filter(t => t.type === 'expense' && new Date(t.date) >= monthStart).reduce((s,a)=>s+Number(a.amount||0),0);
-  if(monthlyBudget > 0 && (monthExpenses/monthlyBudget*100) > 90) notifications.push({type:'warning',title:'Budget high',message:`You've used ${(monthExpenses/monthlyBudget*100).toFixed(0)}% of budget`});
-  recurringPayments.forEach(r => {
-    const due = new Date(now.getFullYear(), now.getMonth(), r.dueDate || 1);
-    const days = Math.ceil((due - now)/(1000*60*60*24));
-    if(days >=0 && days <=3) notifications.push({type:'info', title:`${r.title} due`, message:`Due in ${days} days`});
-  });
-  const dot = document.getElementById('notification-dot');
-  dot.style.display = notifications.length ? 'inline-block' : 'none';
-}
-
-/* ---------- Export / Import ---------- */
-function exportCSV(){
-  const header = ['date','type','title','category','amount','notes'].join(',');
-  const rows = transactions.map(t => [t.date,t.type,`"${(t.title||'').replace(/"/g,'""')}"`,t.category,t.amount, `"${(t.notes||'').replace(/"/g,'""')}"`].join(','));
-  const csv = [header, ...rows].join('\n');
-  downloadFile(csv,'trackit.csv','text/csv');
-}
-
-function exportJSON(){
-  const data = { transactions, recurringPayments, categories, monthlyBudget, categoryBudgets, savingsGoal, currency };
-  downloadFile(JSON.stringify(data,null,2),'trackit.json','application/json');
-}
-
-function downloadFile(content, filename, type){
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
-}
-
-function importData(){
-  document.getElementById('hidden-import').click();
-}
-async function handleImport(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const text = await file.text();
-  try {
-    const data = JSON.parse(text);
-    if(!confirm('Replace all your cloud data with this file?')) return;
-    await clearCollection('transactions');
-    await clearCollection('recurring');
-    const txCol = collection(db, 'users', uid, 'transactions');
-    for(const t of (data.transactions||[])) await addDoc(txCol, t);
-    const recCol = collection(db, 'users', uid, 'recurring');
-    for(const r of (data.recurringPayments||[])) await addDoc(recCol, r);
-    categories = data.categories || categories;
-    monthlyBudget = data.monthlyBudget || 0;
-    categoryBudgets = data.categoryBudgets || {};
-    savingsGoal = data.savingsGoal || 0;
-    currency = data.currency || currency;
-    await writeSettingsToFirestore();
-    alert('Imported');
-  } catch(e){ alert('Import failed: '+e.message); }
-}
-async function clearCollection(name){
-  const col = collection(db, 'users', uid, name);
-  const snap = await getDocs(col);
-  const batch = writeBatch(db);
-  snap.docs.forEach(d => batch.delete(d.ref));
-  await batch.commit();
-}
-
-async function resetData(){
-  if(!confirm('Delete ALL data?')) return;
-  await clearCollection('transactions'); await clearCollection('recurring');
-  categories = ["Food","Travel","Rent","Shopping","Salary","Entertainment","Bills","Health","Other"];
-  monthlyBudget = 0; categoryBudgets = {}; savingsGoal = 0; currency='₹';
-  await writeSettingsToFirestore(); updateCategoryDropdown(); renderCategoryBudgets(); updateUI(); alert('Done');
-}
-
-/* ---------- Utility ---------- */
-function showIncome(){ document.querySelector('[data-page="history"]').click(); currentFilter='income'; updateAllTransactions(); }
-function showExpense(){ document.querySelector('[data-page="history"]').click(); currentFilter='expense'; updateAllTransactions(); }
-function openBudgetPage(){ document.querySelector('[data-page="budget"]').click(); }
-
-/* ---------- Start / initial setup ---------- */
-function updateCategoryDropdown(){ document.querySelectorAll('#category, #recurring-category').forEach(el=>{ if(el) el.innerHTML = categories.map(c=>`<option value="${c}">${c}</option>`).join(''); }); }
-function renderCategoryBudgets(){ if(categoryBudgetList) categoryBudgetList.innerHTML = categories.map(c=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><div style="width:140px">${c}</div><input id="cat-budget-${escapeId(c)}" type="number" placeholder="0" value="${categoryBudgets[c]||''}" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eee;"></div>`).join(''); }
-updateCategoryDropdown(); renderCategoryBudgets(); renderRecurringList(); updateUI();
-
-/* initial action: hide auth-overlay until firebase state tells otherwise */
-authOverlay.style.display = 'none';
-
-/* periodic updates for analytics/notifications */
-setInterval(()=>{ updateAnalytics(); generateNotifications(); }, 5000);
-
-/* Make some functions global for inline handlers */
-window.openModal = openModal; window.closeModal = closeModal; window.openRecurringModal = openRecurringModal; window.closeRecurringModal = closeRecurringModal;
-window.handleSubmit = handleSubmit; window.handleRecurringSubmit = handleRecurringSubmit;
-window.editTransaction = editTransaction; window.deleteTransaction = deleteTransaction;
-window.deleteRecurring = deleteRecurring;
-window.exportCSV = exportCSV; window.exportJSON = exportJSON; window.importData = importData;
-window.handleImport = handleImport; window.resetData = resetData; window.updateCategoryDropdown = updateCategoryDropdown;
-window.saveCategoryBudgets = saveCategoryBudgets; window.setBudget = setBudget; window.showIncome = showIncome; window.showExpense = showExpense;
+    document.querySelectorAll('.sidebar-menu button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.sidebar-menu button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const page = btn.dataset.page;
+        document.querySelectorAll('section').forEach(sec=>sec.classList.remove('active'));
+        document.getElementById(page).classList.add('active');
+      });
+    });
   </script>
 </body>
 </html>
