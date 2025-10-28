@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrackIT – Expense Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#f8f8f8;color:#333}
+    header{background:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+    .logo{color:#ff6b35;font-weight:700;font-size:22px}
+    #login-btn,#logout-btn{padding:8px 14px;border:none;border-radius:6px;cursor:pointer}
+    #login-btn{background:#ff6b35;color:#fff}
+    #logout-btn{background:#eee;color:#333}
+    main{max-width:700px;margin:30px auto;padding:0 16px}
+    .summary{display:flex;justify-content:space-between;gap:12px;margin-bottom:24px}
+    .card{background:#fff;flex:1;padding:16px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.08);text-align:center}
+    .card h3{font-size:14px;color:#666;margin-bottom:6px}
+    .card p{font-size:20px;font-weight:600}
+    #transactions-list .item{background:#fff;margin-bottom:10px;padding:12px 16px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+    .income{border-left:4px solid #10b981}
+    .expense{border-left:4px solid #ef4444}
+    .add-btn{position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;border:none;background:#ff6b35;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 12px rgba(255,107,53,0.5)}
+    canvas{margin-top:40px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">TrackIT</div>
+    <div>
+      <button id="login-btn">Login</button>
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="summary">
+      <div class="card">
+        <h3>Total Income</h3><p id="income-total">₹0</p>
+      </div>
+      <div class="card">
+        <h3>Total Expense</h3><p id="expense-total">₹0</p>
+      </div>
+      <div class="card">
+        <h3>Balance</h3><p id="balance">₹0</p>
+      </div>
+    </div>
+
+    <h2 style="margin-bottom:10px;">Transactions</h2>
+    <div id="transactions-list"></div>
+
+    <canvas id="chart" height="100"></canvas>
+  </main>
+
+  <button class="add-btn" id="add-btn">+</button>
+
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    // ----- Firebase Config -----
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhGtlmGJhDVlA019Mp9VaWFeqCZLcmvRw",
+      authDomain: "trackit-9b1b3.firebaseapp.com",
+      projectId: "trackit-9b1b3",
+      storageBucket: "trackit-9b1b3.firebasestorage.app",
+      messagingSenderId: "1069567955371",
+      appId: "1:1069567955371:web:ac13b2ec4d02b0a2c102ee",
+      measurementId: "G-9CHN828L1R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // ----- Elements -----
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const list = document.getElementById("transactions-list");
+    const addBtn = document.getElementById("add-btn");
+    const incomeEl = document.getElementById("income-total");
+    const expenseEl = document.getElementById("expense-total");
+    const balanceEl = document.getElementById("balance");
+    const chartCanvas = document.getElementById("chart");
+
+    let uid = null;
+    let chart = null;
+
+    // ----- Auth -----
+    loginBtn.addEventListener("click", () => signInWithPopup(auth, provider));
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        uid = user.uid;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        subscribeTransactions();
+      } else {
+        uid = null;
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        list.innerHTML = "<p>Please log in to view your data.</p>";
+        incomeEl.textContent = expenseEl.textContent = balanceEl.textContent = "₹0";
+        if(chart){ chart.destroy(); }
+      }
+    });
+
+    // ----- Firestore Sync -----
+    function subscribeTransactions() {
+      const txCol = collection(db, "users", uid, "transactions");
+      onSnapshot(txCol, (snapshot) => {
+        const txns = [];
+        snapshot.forEach(docu => txns.push({ id: docu.id, ...docu.data() }));
+        renderTransactions(txns);
+      });
+    }
+
+    // ----- Render -----
+    function renderTransactions(txns) {
+      list.innerHTML = "";
+      let income = 0, expense = 0;
+      txns.forEach(t => {
+        const div = document.createElement("div");
+        div.className = `item ${t.type}`;
+        div.innerHTML = `
+          <span>${t.title}</span>
+          <span>${t.type === "income" ? "+" : "-"}₹${t.amount}</span>
+          <button onclick="deleteTxn('${t.id}')">🗑️</button>`;
+        list.appendChild(div);
+        if(t.type==="income") income += Number(t.amount);
+        else expense += Number(t.amount);
+      });
+      const balance = income - expense;
+      incomeEl.textContent = "₹"+income;
+      expenseEl.textContent = "₹"+expense;
+      balanceEl.textContent = "₹"+balance;
+
+      drawChart(income, expense);
+    }
+
+    // ----- Delete -----
+    window.deleteTxn = async (id) => {
+      await deleteDoc(doc(db, "users", uid, "transactions", id));
+    };
+
+    // ----- Add -----
+    addBtn.addEventListener("click", async () => {
+      if (!uid) return alert("Please login first");
+      const title = prompt("Enter title:");
+      const amount = parseFloat(prompt("Enter amount:"));
+      if(!title || isNaN(amount)) return;
+      const type = confirm("Is this income?") ? "income" : "expense";
+      await addDoc(collection(db, "users", uid, "transactions"), {
+        title, amount, type, date: new Date().toISOString()
+      });
+    });
+
+    // ----- Chart -----
+    function drawChart(income, expense){
+      if(chart){ chart.destroy(); }
+      chart = new Chart(chartCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Income', 'Expense'],
+          datasets: [{
+            data: [income, expense],
+            backgroundColor:['#10b981','#ef4444']
+          }]
+        },
+        options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
+      });
+    }
+  </script>
+</body>
+</html>
