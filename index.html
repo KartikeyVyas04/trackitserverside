@@ -151,38 +151,6 @@
     .link-btn { background:none; border:none; color:#ff6b35; cursor:pointer; font-weight:600; padding:0; }
     .small { font-size:13px; color:#666; }
     @media (max-width:900px) { #auth-card{flex-direction:column} #auth-left{display:none} }
-
-    
-    .sidebar {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100vh;
-  background: #fff;
-  box-shadow: 2px 0 6px rgba(0,0,0,0.1);
-}
-
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid #eee;
-  text-align: center;
-}
-
-.sidebar-footer p {
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #555;
-}
-
-#logout-sidebar-btn {
-  background: #ff6b35;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  cursor: pointer;
-}
-
   </style>
 </head>
 <body>
@@ -203,11 +171,6 @@
       <div class="nav-item" onclick="switchPage('budget')"><span class="nav-icon">💰</span><span>Budget</span></div>
       <div class="nav-item" onclick="switchPage('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
     </nav>
-     <!-- ✅ New section at the bottom -->
-      <div class="sidebar-footer" id="sidebar-footer" style="display:none;">
-       <p id="username-display"></p>
-       <button id="logout-sidebar-btn">Logout</button>
-      </div>
   </aside>
 
   <!-- Header -->
@@ -221,7 +184,7 @@
         <div class="notification-bell" onclick="toggleNotifications()">🔔<div class="notification-dot" id="notification-dot"></div></div>
         <div id="auth-controls" style="display:flex;gap:8px;align-items:center;">
           <button id="login-open-btn" class="btn btn-secondary" style="display:none;">Sign in</button>
-          <!-- <button id="logout-btn" class="btn btn-secondary hidden">Logout</button> -->
+          <button id="logout-btn" class="btn btn-secondary hidden">Logout</button>
           <div id="user-info" class="hidden"></div>
         </div>
       </div>
@@ -575,23 +538,6 @@
         updateUI();
       }
     });
-    // ADD THIS SIDEBAR HANDLER - NEW CODE
-const sidebarFooter = document.getElementById("sidebar-footer");
-const usernameDisplay = document.getElementById("username-display");
-const logoutSidebarBtn = document.getElementById("logout-sidebar-btn");
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    sidebarFooter.style.display = "block";
-    usernameDisplay.textContent = user.displayName || user.email;
-  } else {
-    sidebarFooter.style.display = "none";
-  }
-});
-
-logoutSidebarBtn.addEventListener("click", () => {
-  signOut(auth);
-});
 
     function updateAuthUI(loggedIn, user = null) {
       if (loggedIn) {
