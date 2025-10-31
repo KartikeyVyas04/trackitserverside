@@ -217,6 +217,51 @@ body.logged-in .add-btn-floating { display: flex; }
 /* Ensure content not hidden */
 .container { padding-bottom: 95px !important; }
 
+
+/* Final Clean Bottom Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #ffffff;
+  border-top: 1px solid #ddd;
+  display: none;
+  align-items: center;
+  padding: 0 12px;
+  z-index: 999;
+}
+.nav-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 26px;
+  color: #666;
+  cursor: pointer;
+  text-align: center;
+}
+.nav-btn.active { color: #ff6b35; }
+.add-btn {
+  background: #ff6b35;
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  box-shadow: 0 4px 10px rgba(255,107,53,0.35);
+  cursor: pointer;
+}
+/* Only show after login */
+body.logged-in .bottom-nav { display: flex; }
+/* Prevent content overlap */
+.container { padding-bottom: 100px !important; }
+
 </style>
 </head>
 <body>
@@ -591,6 +636,8 @@ body.logged-in .add-btn-floating { display: flex; }
     // ---------- Auth Flow ----------
     // Show auth page until user signed in
     onAuthStateChanged(auth, async (user) => {
+  if(user){ document.body.classList.add('logged-in'); } 
+  else { document.body.classList.remove('logged-in'); }
   if(user){ document.body.classList.add('logged-in'); } 
   else { document.body.classList.remove('logged-in'); }
       if (user) {
@@ -1215,6 +1262,9 @@ body.logged-in .add-btn-floating { display: flex; }
 
     // ---------- Navigation ----------
     function switchPage(page) {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
   document.querySelectorAll('.bottom-nav button').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.page === page);
   });
@@ -1396,12 +1446,15 @@ async function resetData() {
 
 
 
-<!-- Unified Bottom Navigation -->
+
+
+
+<!-- Final Bottom Navigation -->
 <nav class="bottom-nav">
-  <button onclick="switchPage('home')" data-page="home">🏠</button>
-  <button onclick="switchPage('analytics')" data-page="analytics">📊</button>
-  <button onclick="switchPage('history')" data-page="history">📋</button>
-  <button class="add-btn" onclick="openAddTransaction()">➕</button>
+  <button onclick="switchPage('home')" data-page="home" class="nav-btn">🏠</button>
+  <button onclick="switchPage('analytics')" data-page="analytics" class="nav-btn">📊</button>
+  <button onclick="switchPage('history')" data-page="history" class="nav-btn">📋</button>
+  <button onclick="openAddTransaction()" class="add-btn">➕</button>
 </nav>
 
 </body>
