@@ -163,45 +163,59 @@
       .sidebar-user { display: flex; flex-direction: column; }
     }
   
-/* iOS Style Floating Bottom Navigation */
-.bottom-nav-ios {
+
+@media (max-width: 700px) {
+  .bottom-nav-ios { display: flex; }
+  .container { padding-bottom: 100px !important; }
+}
+
+
+/* Simple Bottom Navigation */
+.bottom-nav {
   position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 92%;
-  max-width: 420px;
-  height: 60px;
-  background: white;
-  border-radius: 30px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  background: #ffffff;
+  border-top: 1px solid #ddd;
   display: none;
   justify-content: space-around;
   align-items: center;
   z-index: 999;
 }
-.bottom-nav-btn {
-  flex: 1;
+.bottom-nav button {
   background: none;
   border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #777;
-  font-size: 18px;
-  padding: 6px 0;
+  font-size: 24px;
+  color: #666;
   cursor: pointer;
-  transition: color .3s;
 }
-.bottom-nav-btn span { font-size: 11px; font-weight: 600; }
-.bottom-nav-btn.active { color: #ff6b35; font-weight: 700; }
+.bottom-nav button.active { color: #ff6b35; }
 
-/* Only show on mobile */
-@media (max-width: 700px) {
-  .bottom-nav-ios { display: flex; }
-  .container { padding-bottom: 100px !important; }
+/* Floating Add Button */
+.add-btn-floating {
+  position: fixed;
+  bottom: 78px;
+  right: 22px;
+  width: 58px;
+  height: 58px;
+  background: #ff6b35;
+  color: white;
+  border-radius: 50%;
+  font-size: 32px;
+  border: none;
+  cursor: pointer;
+  display: none;
+  z-index: 1000;
 }
+
+/* Show nav only after login */
+body.logged-in .bottom-nav,
+body.logged-in .add-btn-floating { display: flex; }
+
+/* Ensure content not hidden */
+.container { padding-bottom: 95px !important; }
 
 </style>
 </head>
@@ -577,6 +591,8 @@
     // ---------- Auth Flow ----------
     // Show auth page until user signed in
     onAuthStateChanged(auth, async (user) => {
+  if(user){ document.body.classList.add('logged-in'); } 
+  else { document.body.classList.remove('logged-in'); }
       if (user) {
         uid = user.uid;
         updateAuthUI(true, user);
@@ -1199,6 +1215,12 @@
 
     // ---------- Navigation ----------
     function switchPage(page) {
+  document.querySelectorAll('.bottom-nav button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+  });
+  document.querySelectorAll('.bottom-nav button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+  });
   document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.page === page);
   });
@@ -1363,11 +1385,23 @@ async function resetData() {
 
   </script>
 
-<!-- Bottom Navigation (Mobile Only) -->
-<nav class="bottom-nav-ios">
-  <button onclick="switchPage('home')" class="bottom-nav-btn" data-page="home">🏠<span>Home</span></button>
-  <button onclick="switchPage('history')" class="bottom-nav-btn" data-page="history">📋<span>Transactions</span></button>
-  <button onclick="switchPage('analytics')" class="bottom-nav-btn" data-page="analytics">📊<span>Analytics</span></button>
+
+
+
+
+
+
+
+
+
+
+
+<!-- Unified Bottom Navigation -->
+<nav class="bottom-nav">
+  <button onclick="switchPage('home')" data-page="home">🏠</button>
+  <button onclick="switchPage('analytics')" data-page="analytics">📊</button>
+  <button onclick="switchPage('history')" data-page="history">📋</button>
+  <button class="add-btn" onclick="openAddTransaction()">➕</button>
 </nav>
 
 </body>
