@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/png" href="favicon.png">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>TrackIT - Expense Tracker (Firebase)</title>
@@ -164,7 +163,7 @@
       .sidebar-user { display: flex; flex-direction: column; }
     }
   
-/* iOS Style Floating Rounded Bottom Nav */
+/* iOS Style Floating Bottom Navigation */
 .bottom-nav-ios {
   position: fixed;
   bottom: 16px;
@@ -175,43 +174,33 @@
   height: 60px;
   background: white;
   border-radius: 30px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
   display: none;
   justify-content: space-around;
   align-items: center;
-  z-index: 500;
+  z-index: 999;
 }
-
 .bottom-nav-btn {
   flex: 1;
-  border: none;
   background: none;
-  text-align: center;
-  font-size: 18px;
-  padding: 6px 0;
-  color: #888;
+  border: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  color: #777;
+  font-size: 18px;
+  padding: 6px 0;
   cursor: pointer;
-  transition: color 0.25s;
+  transition: color .3s;
 }
-
-.bottom-nav-btn span {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.bottom-nav-btn.active {
-  color: #ff6b35;
-  font-weight: 600;
-}
+.bottom-nav-btn span { font-size: 11px; font-weight: 600; }
+.bottom-nav-btn.active { color: #ff6b35; font-weight: 700; }
 
 /* Only show on mobile */
 @media (max-width: 700px) {
   .bottom-nav-ios { display: flex; }
-  .container { padding-bottom: 100px; }
+  .container { padding-bottom: 100px !important; }
 }
 
 </style>
@@ -1210,11 +1199,9 @@
 
     // ---------- Navigation ----------
     function switchPage(page) {
-// Highlight bottom navigation
-document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
-  btn.classList.toggle('active', btn.dataset.page === page);
-});
-
+  document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+  });
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
       const navItems = document.querySelectorAll('.nav-item');
       const pages = ['home','history','analytics','recurring','budget','settings'];
@@ -1378,18 +1365,9 @@ async function resetData() {
 
 <!-- Bottom Navigation (Mobile Only) -->
 <nav class="bottom-nav-ios">
-  <button onclick="switchPage('home')" class="bottom-nav-btn" data-page="home">
-    🏠
-    <span>Home</span>
-  </button>
-  <button onclick="switchPage('history')" class="bottom-nav-btn" data-page="history">
-    📋
-    <span>Transactions</span>
-  </button>
-  <button onclick="switchPage('analytics')" class="bottom-nav-btn" data-page="analytics">
-    📊
-    <span>Analytics</span>
-  </button>
+  <button onclick="switchPage('home')" class="bottom-nav-btn" data-page="home">🏠<span>Home</span></button>
+  <button onclick="switchPage('history')" class="bottom-nav-btn" data-page="history">📋<span>Transactions</span></button>
+  <button onclick="switchPage('analytics')" class="bottom-nav-btn" data-page="analytics">📊<span>Analytics</span></button>
 </nav>
 
 </body>
