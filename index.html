@@ -267,6 +267,16 @@ body.logged-in .bottom-nav { display: flex; }
 /* Prevent overlap */
 .container { padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important; }
 
+
+/* Modal fix to avoid overlap with bottom nav */
+.modal {
+  margin-bottom: 80px !important;
+}
+.modal-content, .modal form, #transaction-form {
+  max-height: calc(100vh - 140px) !important;
+  overflow-y: auto !important;
+}
+
 </style>
 </head>
 <body>
